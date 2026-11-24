@@ -7,6 +7,9 @@ and a 16 mm hole beside each slot lets a plug come up to its bank.
 Sized for the **Anker Zolo 20,000 mAh 30 W (built-in USB-C)**. A drop-in insert adapts any slot to the
 **Zolo 10,000 mAh**. Mix them however you like; it's just a matter of how many inserts you print.
 
+**Online generator:** https://nick-pape.github.io/powerbank-station/ — pick the slot count, your power bank's size, clearance and
+cable box side, preview it in 3D and download STL or a PrusaSlicer 3MF. It runs entirely in the browser.
+
 ![4-slot station with banks](out/render_4_loaded.png)
 
 ## Files
@@ -27,6 +30,10 @@ Sized for the **Anker Zolo 20,000 mAh 30 W (built-in USB-C)**. A drop-in insert 
 - Prints as it sits, no supports. Tested slicing with a 0.6 mm nozzle at 0.40 mm layers; 2.6 mm dividers slice as 4 lines.
 
 ## Build
+
+The browser generator (`site/`) is a JavaScript port of `station.py` built on manifold-3d; `node site/test_node.mjs`
+checks that every size builds as a closed solid. `tools/build_site.py` assembles `_site/`, deployed by GitHub Actions.
+
 
     uv run python station.py     # out/station_{1..6}.stl, out/insert_10k.stl
     uv run python render.py 4    # preview renders

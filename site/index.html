@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power Bank Station Generator</title>
+<meta name="description" content="Generate a 3D-printable charging station for any number of power banks, preview it, and download STL or a ready-to-slice PrusaSlicer 3MF.">
+<link rel="stylesheet" href="style.css">
+<style>
+  .field select { width: 100%; margin-top: 4px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; }
+  .dims { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
+  .dims label { font-weight: 400; font-size: 12px; color: var(--muted); display: block; }
+  .dims input { width: 100%; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; font-variant-numeric: tabular-nums; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-top: 8px; }
+  .check input { accent-color: var(--accent); }
+  .warn { color: var(--bad); font-size: 13px; margin-top: 8px; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<header>
+  <h1>Power bank station generator</h1>
+  <p>A desk charging station with a slot per power bank and a built-in cable box. Pick the bank and the number of slots, preview it, download STL or a PrusaSlicer 3MF. Everything runs in your browser.</p>
+</header>
+<main>
+  <div class="app">
+    <section class="panel" aria-label="Station settings">
+      <h2>Station</h2>
+      <div class="field">
+        <label for="slots">Slots <span id="slots-out"></span></label>
+        <div class="row"><input type="range" id="slots-r" min="1" max="8" step="1" value="4"><input type="number" id="slots" min="1" max="8" step="1" value="4"></div>
+      </div>
+      <div class="field">
+        <label for="bank">Power bank</label>
+        <select id="bank"></select>
+        <div class="dims">
+          <div><label for="b-h">Height</label><input type="number" id="b-h" step="0.1" min="40" max="250"></div>
+          <div><label for="b-w">Width</label><input type="number" id="b-w" step="0.1" min="20" max="150"></div>
+          <div><label for="b-t">Thickness</label><input type="number" id="b-t" step="0.1" min="8" max="80"></div>
+        </div>
+        <small>mm. Height stands up, width runs across the station, thickness is the slot pitch.</small>
+      </div>
+      <div class="field">
+        <label for="clear">Clearance <span>per side</span></label>
+        <div class="row"><input type="range" id="clear-r" min="0.3" max="2.5" step="0.1" value="1.0"><input type="number" id="clear" min="0.3" max="2.5" step="0.1" value="1.0"> mm</div>
+      </div>
+      <div class="field">
+        <label for="depth">Slot depth</label>
+        <div class="row"><input type="range" id="depth-r" min="20" max="90" step="1" value="45"><input type="number" id="depth" min="20" max="90" step="1" value="45"> mm</div>
+        <small>How far the bank sits in. The rest sticks up to grab.</small>
+      </div>
+      <div class="field">
+        <label>Cable box</label>
+        <div class="seg" role="group" aria-label="Cable box side"><button type="button" data-cable="left">Left</button><button type="button" data-cable="right" class="on">Right</button><button type="button" data-cable="none">None</button></div>
+        <small>Closed box along one side: cables in through the back, a hole up beside each slot, slack stays inside.</small>
+      </div>
+      <h2 style="margin-top:18px">Inserts</h2>
+      <div class="field">
+        <label for="ins">Inserts for a smaller bank <span id="ins-out"></span></label>
+        <div class="row"><input type="range" id="ins-r" min="0" max="8" step="1" value="1"><input type="number" id="ins" min="0" max="8" step="1" value="1"></div>
+        <select id="small" aria-label="Smaller power bank"></select>
+        <div class="dims">
+          <div><label for="s-h">Height</label><input type="number" id="s-h" step="0.1" min="30" max="250"></div>
+          <div><label for="s-w">Width</label><input type="number" id="s-w" step="0.1" min="15" max="150"></div>
+          <div><label for="s-t">Thickness</label><input type="number" id="s-t" step="0.1" min="5" max="80"></div>
+        </div>
+        <small>An insert drops into any slot and lifts the smaller bank so its top lines up with the others.</small>
+      </div>
+    </section>
+
+    <section aria-label="Preview and export">
+      <div class="view" id="view">
+        <div class="tools"><label class="check" style="margin:0"><input type="checkbox" id="ghost" checked> Show power banks</label></div>
+        <div class="status" id="status">Loading the geometry engine…</div>
+      </div>
+      <div class="stats" id="stats" aria-live="polite"></div>
+      <p class="warn" id="warn" hidden></p>
+      <div class="actions">
+        <button class="btn" id="dl-3mf" disabled>Download 3MF (PrusaSlicer project)</button>
+        <button class="btn ghost" id="dl-stl" disabled>Station STL</button>
+        <button class="btn ghost" id="dl-ins" disabled>Insert STL</button>
+      </div>
+      <p class="note">The 3MF has the station and your inserts laid out on the bed, with the settings it was designed with: Prusa MK4, 0.6 mm HF nozzle, Prusament PETG, 0.40 mm layers, no supports. Use the STLs for other printers. Print the test-fit slices from the <a href="https://github.com/nick-pape/powerbank-station">repo</a> first if you're unsure about clearance.</p>
+    </section>
+  </div>
+</main>
+<footer>Open source: <a href="https://github.com/nick-pape/powerbank-station">github.com/nick-pape/powerbank-station</a> (CC BY-NC-SA 4.0). Other designs: <a href="https://github.com/nick-pape/slatwall-accessories">slatwall-accessories</a>.</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>
