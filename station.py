@@ -32,7 +32,7 @@ class Params:
     bank: Bank = ZOLO_20K
     clear: float = 1.0          # per side, bank -> slot (2 mm total)
     depth: float = 45.0         # how far the bank sits in its slot (along the lean)
-    lean: float = 8.0           # deg, slots tip back so banks rest on the back wall
+    lean: float = 0.0           # deg; >0 tips the slots back so banks rest on the back wall
     floor: float = 2.4          # under the deepest point of a slot
     wall: float = 3.0           # outer walls
     div: float = 2.6            # between slots (4 lines of a 0.6 nozzle)

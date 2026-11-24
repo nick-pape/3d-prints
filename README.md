@@ -1,6 +1,6 @@
 # powerbank-station
 
-Parametric 3D-printed charging station for power banks. Banks stand ports-up in a row of slots leaning back 8°,
+Parametric 3D-printed charging station for power banks. Banks stand upright, ports-up, in a row of slots,
 with a closed cable box along one side: USB-C cables come in through an opening at the back, slack stays inside,
 and a 16 mm hole beside each slot lets a plug come up to its bank.
 
