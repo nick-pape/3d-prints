@@ -15,6 +15,7 @@ Sized for the **Anker Zolo 20,000 mAh 30 W (built-in USB-C)**. A drop-in insert 
 |---|---|
 | `out/station_{1..6}.stl` | 1 to 6 slot stations |
 | `out/insert_10k.stl` | 10K insert, one per slot that holds a 10K |
+| `out/testfit.3mf`, `out/testfit_*.stl` | 8 mm test-fit slices of the 1-slot top and the insert top (about 16 g); print these first |
 | `out/powerbank_station_4.3mf` | 4-slot + 1 insert, PrusaSlicer project (MK4 IS, 0.6 HF nozzle, Prusament PETG, 0.40 mm) |
 
 ## Details
