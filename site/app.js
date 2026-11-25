@@ -10,7 +10,7 @@ const G_PER_CM3 = 0.976, MIN_PER_CM3 = 1.08;
 const BED = [250, 210];
 
 const viewer = new Viewer($("view"));
-let geo, ini = "", current = null, cable = "right";
+let geo, ini = "", current = null, cable = "right", entry = "both";
 
 // ---- inputs ----
 function presets(sel, key) {
@@ -32,6 +32,9 @@ for (const k of ["slots", "clear", "depth", "ins"]) {
 document.querySelectorAll("[data-cable]").forEach((b) => b.addEventListener("click", () => {
   cable = b.dataset.cable; document.querySelectorAll("[data-cable]").forEach((x) => x.classList.toggle("on", x === b)); schedule();
 }));
+document.querySelectorAll("[data-entry]").forEach((b) => b.addEventListener("click", () => {
+  entry = b.dataset.entry; document.querySelectorAll("[data-entry]").forEach((x) => x.classList.toggle("on", x === b)); schedule();
+}));
 $("ghost").addEventListener("change", () => current && show(true));
 
 const num = (id, lo, hi, d) => { const v = parseFloat($(id).value); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
@@ -40,7 +43,7 @@ function params() {
   const small = { h: num("s-h", 30, 250, BANKS.zolo10k.h), w: num("s-w", 15, 150, BANKS.zolo10k.w), t: num("s-t", 5, 80, BANKS.zolo10k.t) };
   const slots = Math.round(num("slots", 1, 8, 4));
   const depth = Math.min(num("depth", 20, 90, 45), bank.h - 15);
-  return { ...DEFAULTS, slots, bank, small, clear: num("clear", 0.3, 2.5, 1), depth, cable,
+  return { ...DEFAULTS, slots, bank, small, clear: num("clear", 0.3, 2.5, 1), depth, cable, entries: entry === "both" ? ["front", "back"] : [entry],
            inserts: Math.min(Math.round(num("ins", 0, 8, 1)), slots) };
 }
 

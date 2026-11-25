@@ -40,7 +40,7 @@ checks that every size builds as a closed solid. `tools/build_site.py` assembles
     uv run python tools/make_3mf.py out/powerbank_station_4.3mf tools/petg_hf06.ini out/station_4.stl out/insert_10k.stl
 
 Main knobs (`Params` in `station.py`): `slots`, `clear`, `depth`, `lean`, `div`, `cable` ("left" / "right" / "none"),
-`cable_w`, `hole_d`, `push_d`. Change `Bank` sizes to fit a different power bank.
+`cable_w`, `entries` ("front" and/or "back"), `hole_d`, `push_d`. Change `Bank` sizes to fit a different power bank.
 
 Other designs: [slatwall-accessories](https://github.com/nick-pape/slatwall-accessories).
 

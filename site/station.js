@@ -23,7 +23,8 @@ export const DEFAULTS = {
   hole_d: 16.0,
   roof: 2.4,
   arch_r: 8.0,
-  entry_h: 28.0,
+  entries: ["front", "back"],   // cable entries into the box
+  entry_h: 28.0,     // to the tip of its pointed top
   entry_r: 4.0,
   corner_r: 6.0,
   slot_r: 5.0,
@@ -117,12 +118,21 @@ export function makeGeometry(wasm) {
         cuts.push(cyl(r, r + 2.5, H - 1.5, H + 1, xc, yh));                     // lead-in at the top
         cuts.push(cyl(r + 1.5, r, zt - 7, zt - 5.5, xc, yh));                    // lead-in from the void below
       }
-      // back entry: rounded rectangle flush with the void floor, flared 2 mm at the outer face
-      const ew = p.cable_w - 2, eh = p.entry_h;
-      const entry = (w, h, r, y) => pts3(rrect(w, h, r, xc, zf + h / 2), 0).map(([x, z]) => [x, y, z]);
-      cuts.push(Manifold.hull([...entry(ew, eh, p.entry_r, back - p.wall - 2), ...entry(ew, eh, p.entry_r, back - 2)]));
-      cuts.push(Manifold.hull([...entry(ew, eh, p.entry_r, back - 2.01),
-        ...entry(ew + 4, eh + 2, p.entry_r + 2, back + 0.01), ...entry(ew + 4, eh + 2, p.entry_r + 2, back + 1)]));
+      // cable entries (front and/or back): flush with the void floor, rounded bottom corners, straight sides,
+      // a 45 deg pointed top to a 2 mm flat (nothing bridges), and a 2 mm 45 deg flare at the outer face
+      const ehw = (p.cable_w - 2) / 2, eh = p.entry_h, fl = 2.0;
+      const ring = (hw, top, y) => {
+        const r = p.entry_r, half = [];
+        for (let k = 0; k <= ARC; k++) { const a = (k / ARC) * Math.PI / 2; half.push([hw - r + r * Math.sin(a), zf + r - r * Math.cos(a)]); }
+        half.push([hw, top - (hw - 1)], [1, top]);
+        return [...half, ...half.map(([x, z]) => [-x, z])].map(([x, z]) => [xc + x, y, z]);
+      };
+      for (const end of p.entries || ["front", "back"]) {
+        const [face, inw] = end === "back" ? [back, -1] : [0, 1];
+        cuts.push(Manifold.hull([...ring(ehw, zf + eh, face + inw * (p.wall + 3)), ...ring(ehw, zf + eh, face - inw)]));
+        cuts.push(Manifold.hull([...ring(ehw, zf + eh, face + inw * fl), ...ring(ehw + fl, zf + eh + fl, face),
+          ...ring(ehw + fl, zf + eh + fl, face - inw)]));
+      }
     }
     body = body.subtract(Manifold.union(cuts));
     return { part: body, layout: L };

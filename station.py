@@ -10,7 +10,8 @@ from math import cos, sin, tan, radians
 from pathlib import Path
 
 from build123d import (Align, Axis, Box, Cylinder, Location, Plane, Polyline, Pos, Rot, Part, export_stl,
-                       extrude, fillet, chamfer, make_face, Select)
+                       extrude, fillet, chamfer, make_face, loft, Select)
+from build123d import Face, Wire
 
 IN = 25.4
 
@@ -41,8 +42,9 @@ class Params:
     hole_d: float = 16.0        # one per slot, passes a USB-C plug
     roof: float = 2.4           # top of the cable box
     arch_r: float = 8.0         # cable box ceiling: walls curve in on this radius, then 45 deg to the top
-    entry_h: float = 28.0       # cable entry at the back (width = cable_w - 2)
-    entry_r: float = 4.0        # its corner radius
+    entries: tuple = ("front", "back")   # cable entries into the box: "front" and/or "back"
+    entry_h: float = 28.0       # entry height to the tip of its pointed top (width = cable_w - 2)
+    entry_r: float = 4.0        # its bottom corner radius
     corner_r: float = 6.0       # outer leaning corners
     slot_r: float = 5.0         # slot corners in plan (the banks have soft corners)
     floor_r: float = 2.5        # slot floor to wall
@@ -66,6 +68,15 @@ def _try(op, sizes, part, what):
             pass
     print(f"{what} skipped")
     return part
+
+
+def _entry_ring(xc, y, hw, z0, top, r, flat=1.0, n=6):
+    """Cable entry outline in the plane at y: rounded bottom corners, vertical sides, 45 deg roof to a flat."""
+    from math import pi
+    right = [(hw - r + r * sin(k / n * pi / 2), z0 + r - r * cos(k / n * pi / 2)) for k in range(n + 1)]
+    right += [(hw, top - (hw - flat)), (flat, top)]
+    pts = [(xc + x, y, z) for x, z in right] + [(xc - x, y, z) for x, z in reversed(right)]
+    return Face(Wire.make_polygon(pts, close=True))
 
 
 def _near_circle(e, xc, ycs, r, tol=0.6):
@@ -130,23 +141,23 @@ def station(p: Params = Params()) -> Part:
         for i in range(p.slots):                          # hole level with the middle of each slot's mouth
             yh = y0 + i * pitch + (H - zb) * t + st / (2 * cos(a))
             body -= Pos(xc, yh, zs - 1) * Cylinder(p.hole_d / 2, p.roof + cc + 2, align=(Align.CENTER, Align.CENTER, Align.MIN))
-        # back entry: rounded rectangle flush with the void floor, its outer edge rounded too
-        ew, eh = p.cable_w - 2, p.entry_h
-        ent = Box(ew, 40, eh, align=(Align.CENTER, Align.CENTER, Align.MIN))
-        ent = fillet(ent.edges().filter_by(Axis.Y), p.entry_r)
-        body -= Pos(xc, back_bottom + (zf + eh / 2) * t, zf) * ent
-        on_back = lambda v: abs(v.Y - (back_bottom + v.Z * t)) < 0.05 and abs(v.X - xc) < ew / 2 + 0.1 and v.Z < zf + eh + 0.1
-        lip = [e for e in body.edges() if all(on_back(v) for v in e.vertices()) and e.center().Z > 0.5]
-        for r in (2.0, 1.5, 1.0):
-            try:
-                body = fillet(lip, r); break
-            except Exception:
-                try:   # the bottom edge sits flush with the void floor; round the rest
-                    body = fillet([e for e in lip if e.center().Z > zf + 0.5], r); break
-                except Exception:
-                    pass
-        else:
-            print("entry round skipped")
+        # cable entries at the front and/or back: flush with the void floor, rounded bottom corners, straight
+        # sides, then a 45 deg pointed top to a 2 mm flat (same idea as the void ceiling, so nothing bridges),
+        # and a 2 mm 45 deg flare at the outer face
+        ehw, eh, flare = (p.cable_w - 2) / 2, p.entry_h, 2.0
+        zm = zf + eh / 2
+        for end in p.entries:
+            if end == "back":
+                face, inward = back_bottom + zm * t, -1
+            elif end == "front":
+                face, inward = zm * t, 1
+            else:
+                raise ValueError(f"entry {end!r}: use 'front' or 'back'")
+            ring = lambda hw, top, y: _entry_ring(xc, y, hw, zf, top, p.entry_r)
+            deep = face + inward * (p.wall + 3.0)
+            body -= loft([ring(ehw, zf + eh, deep), ring(ehw, zf + eh, face - inward * 1.0)])
+            body -= loft([ring(ehw, zf + eh, face + inward * flare), ring(ehw + flare, zf + eh + flare, face)])
+            body -= loft([ring(ehw + flare, zf + eh + flare, face), ring(ehw + flare, zf + eh + flare, face - inward * 1.0)])
     # push-out holes: lead-in where the finger goes in (45 deg chamfer prints fine at the bed)
     holes = [e for e in body.edges().filter_by_position(Axis.Z, -1e-3, 1e-3)
              if e.geom_type.name == "CIRCLE" and abs(e.radius - p.push_d / 2) < 0.01]
