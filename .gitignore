@@ -1,4 +1,4 @@
 __pycache__/
 .venv/
-out/_tmp/
+**/out/_tmp/
 _site/

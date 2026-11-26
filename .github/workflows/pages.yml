@@ -1,9 +1,9 @@
-name: Deploy generator site
+name: Deploy Pages (generators)
 
 on:
   push:
     branches: [main]
-    paths: [site/**, tools/build_site.py, tools/petg_hf06.ini, .github/workflows/pages.yml]
+    paths: [pages/**, powerbank-station/site/**, powerbank-station/tools/build_site.py, powerbank-station/tools/petg_hf06.ini, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
@@ -27,9 +27,12 @@ jobs:
         with:
           node-version: "22"
       - name: Geometry check (every size builds as a closed solid)
-        working-directory: site
+        working-directory: powerbank-station/site
         run: npm ci && node test_node.mjs
-      - run: python tools/build_site.py
+      - name: Assemble _site (landing page + powerbank-station/)
+        run: |
+          mkdir -p _site && cp pages/* _site/ && touch _site/.nojekyll
+          python powerbank-station/tools/build_site.py _site/powerbank-station
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
